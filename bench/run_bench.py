@@ -136,6 +136,8 @@ def main():
     ap.add_argument("--new-release", action="store_true",
                     help="avant chaque job, nouvelle release (workers neufs = vrai froid, copie refaite)")
     ap.add_argument("--info", action="store_true", help="un job gv_info (inventaire du volume)")
+    ap.add_argument("--image", action="append", default=[],
+                    help="NOM=CHEMIN : image envoyée en base64 (handler : déposée dans /comfyui/input/NOM)")
     ap.add_argument("--clip", help="remplace le fichier du CLIPLoader (ex. témoin sur c-edge)")
     ap.add_argument("--tag", default="run")
     ap.add_argument("--max-wait", type=int, default=3600, help="attente max par job, en s")
@@ -158,6 +160,16 @@ def main():
         return
 
     wf = json.load(open(a.workflow, encoding="utf-8"))
+    images = []
+    for spec in a.image:
+        name, path = spec.split("=", 1)
+        images.append({"name": name, "image": base64.b64encode(open(path, "rb").read()).decode()})
+
+    def payload(w):
+        p = {"input": {"workflow": w}}
+        if images:
+            p["input"]["images"] = images
+        return p
 
     if a.parallel:
         # N jobs d'un coup sur une release neuve : RunPod monte jusqu'à N workers neufs en même
@@ -174,7 +186,7 @@ def main():
             for n in w.values():
                 for sk in [k for k in n.get("inputs", {}) if k.endswith("seed") and isinstance(n["inputs"][k], int)]:
                     n["inputs"][sk] = random.randint(1, 2 ** 48)
-            results[k] = run_job(ep, key, {"input": {"workflow": w}}, a.max_wait)
+            results[k] = run_job(ep, key, payload(w), a.max_wait)
 
         th = [threading.Thread(target=one, args=(k,)) for k in range(a.parallel)]
         for t in th:
@@ -207,7 +219,7 @@ def main():
         if a.cold or a.new_release:
             waited = wait_no_worker(ep, key, 1800)
             print("attente sans worker actif : %ss" % waited)
-        st = run_job(ep, key, {"input": {"workflow": wf}}, a.max_wait)
+        st = run_job(ep, key, payload(wf), a.max_wait)
         rec = summarize(st, a.out, "%s%02d" % (a.tag, i + 1))
         rec["cold_requested"] = a.cold
         rec["new_release"] = a.new_release

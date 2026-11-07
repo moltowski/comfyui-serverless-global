@@ -31,6 +31,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("id")
     ap.add_argument("--preload")
+    ap.add_argument("--image", help="image Docker (tag épinglé)")
     ap.add_argument("--disk", type=int)
     ap.add_argument("--pools")
     ap.add_argument("--timeout-s", type=int)
@@ -51,6 +52,8 @@ def main():
         env = dict(cur.get("env") or {}); env["PRELOAD_MODELS"] = a.preload; patch["env"] = env
     if a.disk:
         patch["disk"] = a.disk
+    if a.image:
+        patch["image"] = a.image
     if a.pools:
         gpu = {k: cur["gpu"][k] for k in ("excludedTypes", "allowedCudaVersions", "count") if k in cur["gpu"]}
         gpu["pools"] = a.pools.split(",")
@@ -81,7 +84,7 @@ def main():
     # réécrire la valeur par l'API v1 débloque l'état.
     call("PATCH", "https://rest.runpod.io/v1/endpoints/" + a.id, {"workersMax": w["max"]})
     g = call("GET", u)
-    print(json.dumps({"preload": (g.get("env") or {}).get("PRELOAD_MODELS"), "disk": g["disk"], "pools": g["gpu"]["pools"],
+    print(json.dumps({"image": g.get("image", "")[-12:], "preload": (g.get("env") or {}).get("PRELOAD_MODELS"), "disk": g["disk"], "pools": g["gpu"]["pools"],
                       "timeout_s": g["timeout"] / 1000, "workers": g["workers"], "mounts": g["mounts"]}))
 
 

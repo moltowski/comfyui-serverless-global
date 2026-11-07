@@ -27,6 +27,15 @@ def price_per_s(gpu):
 def main():
     runs = sys.argv[1]
     recs = [json.loads(l) for l in open(os.path.join(runs, "results.jsonl"), encoding="utf-8")]
+    # $/h réellement facturé par worker (bench/worker_costs.py) : prioritaire sur la grille publique
+    rate = {}
+    wpath = os.path.join(runs, "workers.jsonl")
+    if os.path.exists(wpath):
+        for l in open(wpath, encoding="utf-8"):
+            w = json.loads(l)
+            if w.get("costPerHr"):
+                rate[w["workerId"]] = w["costPerHr"]
+    GPU_BY_RATE = {1.19: "RTX 5090", 2.49: "RTX PRO 6000"}
     files = sorted(os.listdir(runs))
     cards = []
     for r in recs:
@@ -34,18 +43,19 @@ def main():
             continue
         media = [f for f in files if f.startswith("%s_%s_" % (r["tag"], r["id"]))]
         gv = r.get("gv") or {}
-        gpu = r.get("gpu") or gv.get("gpu") or ""
+        gpu = r.get("gpu") or gv.get("gpu") or GPU_BY_RATE.get(rate.get(r.get("workerId")), "")
         dc = (gv.get("env") or {}).get("RUNPOD_DC_ID") or r.get("dc") or "?"
         cold = gv.get("job_index") == 1 if gv else r.get("cold")
         exec_s = r.get("exec_s") or 0
-        pps = price_per_s(gpu)
+        pps = rate[r["workerId"]] / 3600 if r.get("workerId") in rate else price_per_s(gpu)
         if gv and cold:
             billed = (gv.get("total_s") or 0) + 20 + exec_s + 5
         else:
             billed = exec_s + 5
         cost = "%.3f $" % (billed * pps) if pps else "?"
         total = (r.get("delay_s") or 0) + exec_s
-        label = "%s · %s · %s · %s" % (r["tag"], r.get("endpoint", "global volume"), gpu.split(",")[0].replace("NVIDIA ", ""), dc)
+        ep = "témoin c-edge" if r["tag"].startswith("ref_") else "global volume"
+        label = "%s · %s · %s · %s" % (r["tag"], ep, gpu.split(",")[0].replace("NVIDIA ", ""), dc)
         stats = "%s · attente %ss · exécution %ss · total %ss · ~%s" % (
             "FROID" if cold else "chaud", r.get("delay_s"), exec_s, round(total, 1), cost)
         for m in media:
@@ -67,7 +77,7 @@ figcaption{padding:8px;font-size:12px;color:var(--mut)} figcaption b{color:var(-
 #z{position:fixed;inset:0;background:#000e;display:none;align-items:center;justify-content:center;z-index:9}
 #z img,#z video{max-width:96vw;max-height:96vh;width:auto;cursor:zoom-out}
 </style></head><body><h1>Banc global volume serverless</h1>
-<p>__N__ rendus. Coûts estimés au prix RunPod flex (04/11) : 5090 1,79 $/h, RTX PRO 6000 3,49 $/h, 6000 Ada 1,75 $/h, A40/A6000 1,22 $/h. Clic = plein écran, Échap pour fermer.</p>
+<p>__N__ rendus. Coût = secondes facturées × $/h réel du worker sur le compte (5090 1,19 $/h, RTX PRO 6000 2,49 $/h ; grille publique sinon). Froid global volume = copie + 20 s + exécution + 5 s d'inactivité ; chaud et témoin = exécution + 5 s. Clic = plein écran, Échap pour fermer.</p>
 <div class="grid">__CARDS__</div><div id="z"></div><script>
 const z=document.getElementById('z');
 document.querySelectorAll('.grid img,.grid video').forEach(e=>e.addEventListener('click',ev=>{

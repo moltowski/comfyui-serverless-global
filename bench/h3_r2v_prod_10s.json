@@ -1,0 +1,396 @@
+{
+ "92": {
+  "inputs": {
+   "filename_prefix": [
+    "900",
+    5
+   ],
+   "format": "auto",
+   "codec": "auto",
+   "video": [
+    "130",
+    0
+   ]
+  },
+  "class_type": "SaveVideo",
+  "_meta": {
+   "title": "Save Video"
+  }
+ },
+ "115": {
+  "inputs": {
+   "aspect_ratio": "9:16 (Portrait Widescreen)",
+   "megapixels": 1,
+   "multiple": 32
+  },
+  "class_type": "ResolutionSelector",
+  "_meta": {
+   "title": "Resolution Selector (Size)"
+  }
+ },
+ "119": {
+  "inputs": {
+   "vae_name": "minimax_h3_video_vae_fp16.safetensors"
+  },
+  "class_type": "VAELoader",
+  "_meta": {
+   "title": "Load VAE"
+  }
+ },
+ "120": {
+  "inputs": {
+   "vae_name": "minimax_h3_audio_vae_fp32.safetensors"
+  },
+  "class_type": "VAELoader",
+  "_meta": {
+   "title": "Load VAE"
+  }
+ },
+ "121": {
+  "inputs": {
+   "samples": [
+    "125",
+    0
+   ],
+   "vae": [
+    "120",
+    0
+   ]
+  },
+  "class_type": "VAEDecodeAudio",
+  "_meta": {
+   "title": "VAE Decode Audio"
+  }
+ },
+ "122": {
+  "inputs": {
+   "samples": [
+    "125",
+    0
+   ],
+   "vae": [
+    "119",
+    0
+   ]
+  },
+  "class_type": "VAEDecode",
+  "_meta": {
+   "title": "VAE Decode"
+  }
+ },
+ "123": {
+  "inputs": {
+   "sampler_name": "res_multistep"
+  },
+  "class_type": "KSamplerSelect",
+  "_meta": {
+   "title": "KSamplerSelect"
+  }
+ },
+ "124": {
+  "inputs": {
+   "scheduler": "simple",
+   "steps": 20,
+   "denoise": 1,
+   "model": [
+    "980",
+    0
+   ]
+  },
+  "class_type": "BasicScheduler",
+  "_meta": {
+   "title": "BasicScheduler"
+  }
+ },
+ "125": {
+  "inputs": {
+   "noise": [
+    "129",
+    0
+   ],
+   "guider": [
+    "126",
+    0
+   ],
+   "sampler": [
+    "123",
+    0
+   ],
+   "sigmas": [
+    "124",
+    0
+   ],
+   "latent_image": [
+    "136",
+    1
+   ]
+  },
+  "class_type": "SamplerCustomAdvanced",
+  "_meta": {
+   "title": "SamplerCustomAdvanced"
+  }
+ },
+ "126": {
+  "inputs": {
+   "model": [
+    "980",
+    0
+   ],
+   "conditioning": [
+    "136",
+    0
+   ]
+  },
+  "class_type": "BasicGuider",
+  "_meta": {
+   "title": "Basic Guider"
+  }
+ },
+ "127": {
+  "inputs": {
+   "unet_name": "minimax_h3_ref2va_pruned_int8_convrot.safetensors",
+   "weight_dtype": "default"
+  },
+  "class_type": "UNETLoader",
+  "_meta": {
+   "title": "Load Diffusion Model"
+  }
+ },
+ "128": {
+  "inputs": {
+   "clip_name": "qwen3vl_32b_minimax_h3_int8_convrot.safetensors",
+   "type": "minimax",
+   "device": "default"
+  },
+  "class_type": "CLIPLoader",
+  "_meta": {
+   "title": "Load CLIP"
+  }
+ },
+ "129": {
+  "inputs": {
+   "noise_seed": [
+    "900",
+    1
+   ]
+  },
+  "class_type": "RandomNoise",
+  "_meta": {
+   "title": "RandomNoise"
+  }
+ },
+ "130": {
+  "inputs": {
+   "fps": 24,
+   "bit_depth": 8,
+   "images": [
+    "122",
+    0
+   ],
+   "audio": [
+    "121",
+    0
+   ]
+  },
+  "class_type": "CreateVideo",
+  "_meta": {
+   "title": "Create Video"
+  }
+ },
+ "131": {
+  "inputs": {
+   "expression": "max(5, round(a * 24)) + (5 - (max(5, round(a * 24)) % 17)) % 17",
+   "values.a": [
+    "132",
+    0
+   ]
+  },
+  "class_type": "ComfyMathExpression",
+  "_meta": {
+   "title": "Math Expression"
+  }
+ },
+ "132": {
+  "inputs": {
+   "value": [
+    "900",
+    28
+   ]
+  },
+  "class_type": "PrimitiveFloat",
+  "_meta": {
+   "title": "Float (Duration)"
+  }
+ },
+ "136": {
+  "inputs": {
+   "prompt": [
+    "138",
+    0
+   ],
+   "width": [
+    "960",
+    0
+   ],
+   "height": [
+    "960",
+    1
+   ],
+   "length": [
+    "131",
+    1
+   ],
+   "ref_image_size": "match",
+   "clip": [
+    "128",
+    0
+   ],
+   "vae": [
+    "119",
+    0
+   ],
+   "audio_vae": [
+    "120",
+    0
+   ],
+   "ref_images.ref_image_0": [
+    "137",
+    0
+   ],
+   "ref_images.ref_image_1": [
+    "139",
+    0
+   ],
+   "ref_audios.ref_audio_0": [
+    "985",
+    0
+   ]
+  },
+  "class_type": "MiniMaxH3ReferenceToVideo",
+  "_meta": {
+   "title": "MiniMax H3 Reference to Video"
+  }
+ },
+ "137": {
+  "inputs": {
+   "image_path": [
+    "900",
+    10
+   ],
+   "RGBA": "false"
+  },
+  "class_type": "Image Load",
+  "_meta": {
+   "title": "Load Image (by path / hub)"
+  }
+ },
+ "138": {
+  "inputs": {
+   "value": [
+    "900",
+    0
+   ]
+  },
+  "class_type": "PrimitiveStringMultiline",
+  "_meta": {
+   "title": "Input Text (Prompt)"
+  }
+ },
+ "139": {
+  "inputs": {
+   "image_path": [
+    "900",
+    11
+   ],
+   "RGBA": "false"
+  },
+  "class_type": "Image Load",
+  "_meta": {
+   "title": "Load Image (by path / hub)"
+  }
+ },
+ "900": {
+  "inputs": {
+   "prompt": "<Picture 1> is the scene: a ceramic coffee mug on a wooden kitchen table by a window. Keep it identical.\n<Picture 2> is the same mug; keep its exact shape and colour.\n\nVertical 9:16, photoreal smartphone look, morning daylight.\n\nTimeline:\n[0s-3s] steam starts to rise from the mug.\n[3s-7s] the camera pushes in slowly toward the mug.\n[7s-10s] sunlight shifts softly across the table.\n\nCamera: close medium shot, slow push-in.\nAudio: quiet kitchen ambience, birds outside, a clock ticking. No music, no voice.\nNo subtitles, no captions, no watermark.",
+   "seed": 973047248086433,
+   "width": 768,
+   "height": 1344,
+   "aspect_ratio": "9:16",
+   "out_prefix": "video/gvbench_r2v_10s",
+   "lora_name": "MysticXXX_MMH3-V4.safetensors",
+   "lora_strength": 0.0,
+   "lora_name_2": "",
+   "lora_strength_2": 1.0,
+   "ref_image_0": "/comfyui/input/ref_0.jpg",
+   "ref_image_1": "/comfyui/input/ref_1.jpg",
+   "ref_image_2": "",
+   "ref_image_3": "",
+   "ref_image_4": "",
+   "ref_image_5": "",
+   "ref_image_6": "",
+   "ref_image_7": "",
+   "ref_image_8": "",
+   "ref_audio_0": "",
+   "ref_audio_1": "",
+   "ref_video_0": "",
+   "ref_video_1": "",
+   "n_ref_images": 2,
+   "n_ref_audio": 0,
+   "n_ref_video": 0,
+   "enable_character": true,
+   "schema_version": 2,
+   "duration": 10,
+   "frames": 81
+  },
+  "class_type": "PT_InputHub",
+  "_meta": {
+   "title": "Project Type \u2014 Input Hub"
+  }
+ },
+ "960": {
+  "inputs": {
+   "aspect_ratio": [
+    "900",
+    4
+   ],
+   "target_size": 1024,
+   "multiple_of": 32
+  },
+  "class_type": "Width and height from aspect ratio \ud83e\udeb4",
+  "_meta": {
+   "title": "W/H from hub aspect_ratio"
+  }
+ },
+ "980": {
+  "inputs": {
+   "model": [
+    "127",
+    0
+   ],
+   "lora_name": [
+    "900",
+    6
+   ],
+   "strength_model": [
+    "900",
+    7
+   ]
+  },
+  "class_type": "LoraLoaderModelOnly",
+  "_meta": {
+   "title": "H3 LoRA (hub-driven, model-only)"
+  }
+ },
+ "985": {
+  "class_type": "PT_LoadAudioOptional",
+  "inputs": {
+   "audio_path": [
+    "900",
+    19
+   ]
+  },
+  "_meta": {
+   "title": "Load Audio (optional / hub)"
+  }
+ }
+}
