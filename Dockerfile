@@ -28,18 +28,20 @@ RUN apt-get update && \
 # 1. ComfyUI au commit de comfyui-pod-global (v0.37.0 : nodes natifs Qwen 2.1 et MiniMax H3).
 #    On met à jour le clone existant (/comfyui) : rejouer `comfy install` échoue sur un workspace
 #    existant. `uv pip` et pas `pip` : la base a 2 venvs, le runtime est /opt/venv (piège vécu sur H3).
+#    Toujours `--python /opt/venv/bin/python` : sinon uv prend le venv le plus proche du dossier
+#    courant, et après un `cd /comfyui/...` c'est /comfyui/.venv (1er build du 07/11 cassé ainsi).
 ARG COMFYUI_SHA=a7169322485d0049380fb207fa17e9fb3ec40486
 RUN git -C /comfyui fetch --depth 1 origin "${COMFYUI_SHA}" && \
     git -C /comfyui checkout -q FETCH_HEAD && \
-    uv pip install --no-cache-dir -r /comfyui/requirements.txt && \
+    uv pip install --python /opt/venv/bin/python --no-cache-dir -r /comfyui/requirements.txt && \
     python -c "import sys; sys.path.insert(0,'/comfyui'); from comfyui_version import __version__ as v; print('ComfyUI', v); assert v.startswith('0.37'), v"
 
 # 2. torchaudio (importé par le node natif MiniMax H3), à la version exacte du torch de la base.
 #    Puis on fige torch / torchvision / torchaudio : aucun requirements.txt de node ne les remplace.
 RUN TV=$(python -c "import torch; print(torch.__version__.split('+')[0])") && echo "torch=$TV" && \
     ( python -c "import torchaudio" 2>/dev/null || \
-      uv pip install --no-cache-dir "torchaudio==${TV}" --index-url https://download.pytorch.org/whl/cu128 ) && \
-    uv pip freeze | grep -iE '^(torch|torchvision|torchaudio)==' > /opt/torch-constraints.txt && \
+      uv pip install --python /opt/venv/bin/python --no-cache-dir "torchaudio==${TV}" --index-url https://download.pytorch.org/whl/cu128 ) && \
+    uv pip freeze --python /opt/venv/bin/python | grep -iE '^(torch|torchvision|torchaudio)==' > /opt/torch-constraints.txt && \
     cat /opt/torch-constraints.txt
 
 # 3. Custom nodes publics épinglés au SHA (nodes.txt, même liste que comfyui-pod-global).
@@ -49,7 +51,7 @@ RUN cd /comfyui/custom_nodes && \
       d=$(basename "$url" .git); \
       git clone -q "$url" "$d" && git -C "$d" checkout -q "$sha" || exit 1; \
       if [ -f "$d/requirements.txt" ]; then \
-        uv pip install --no-cache-dir -c /opt/torch-constraints.txt -r "$d/requirements.txt" || exit 1; \
+        uv pip install --python /opt/venv/bin/python --no-cache-dir -c /opt/torch-constraints.txt -r "$d/requirements.txt" || exit 1; \
       fi; \
       echo "node $d @ $sha"; \
     done
@@ -75,7 +77,7 @@ RUN chmod +x /gv_start.sh && \
 RUN python -c "import torch, torchaudio; print('torch', torch.__version__, 'torchaudio', torchaudio.__version__)" && \
     cd /comfyui && \
     timeout 600 python main.py --cpu --quick-test-for-ci > /tmp/import-test.log 2>&1; \
-    tail -40 /tmp/import-test.log; \
+    grep -B3 -A15 -E "Traceback|IMPORT FAILED" /tmp/import-test.log | head -150; \
     ! grep -q "IMPORT FAILED" /tmp/import-test.log
 
 CMD ["/gv_start.sh"]
