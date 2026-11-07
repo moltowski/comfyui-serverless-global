@@ -11,8 +11,8 @@
 # comme comfyui-serverless-krea et -h3. ComfyUI + custom nodes = mêmes commits que l'image de pod
 # comfyui-pod-global (testée sur test_volume le 08/10), pour qu'un workflow passe de l'une à l'autre.
 #
-# Démarrage : /gv_start.sh (copie, cf. gv/preload.py) puis /start.sh de la base, patché pour
-# accepter COMFY_ARGS et lancer /gv_handler.py (ajoute les mesures de copie à chaque sortie de job).
+# Démarrage : /gv_start.sh -> /start.sh de la base, patché : ComfyUI passe par gv/launch_comfy.sh
+# (copie des modèles puis ComfyUI) et le handler est /gv_handler.py (mesures dans chaque sortie).
 # Aucun modèle, aucun secret dans l'image.
 
 ARG BASE=runpod/worker-comfyui:5.8.6-base
@@ -62,13 +62,17 @@ COPY custom_nodes/ /comfyui/custom_nodes/
 # 5. Modèles : /models (copies locales) d'abord, le global volume en secours.
 COPY extra_model_paths.yaml /comfyui/extra_model_paths.yaml
 
-# 6. Démarrage : copie, puis le /start.sh de la base, patché (COMFY_ARGS + handler enveloppé).
+# 6. Démarrage : /start.sh de la base, patché : ComfyUI passe par launch_comfy.sh (copie des modèles,
+#    puis exec de ComfyUI sous le même PID, que le handler surveille) et le handler est enveloppé.
+#    Le handler démarre sans attendre la copie (copie avant le handler = workers H3 en boucle, 07/11).
 COPY model_presets.txt /opt/gv/model_presets.txt
 COPY gv/preload.py /opt/gv/preload.py
+COPY gv/launch_comfy.sh /opt/gv/launch_comfy.sh
 COPY gv/gv_start.sh /gv_start.sh
 COPY gv/gv_handler.py /gv_handler.py
-RUN chmod +x /gv_start.sh && \
-    sed -i 's#python -u /comfyui/main.py #python -u /comfyui/main.py ${COMFY_ARGS:-} #g; s#python -u /handler.py#python -u /gv_handler.py#g' /start.sh && \
+RUN chmod +x /gv_start.sh /opt/gv/launch_comfy.sh && \
+    sed -i 's#python -u /comfyui/main.py #/opt/gv/launch_comfy.sh ${COMFY_ARGS:-} #g; s#python -u /handler.py#python -u /gv_handler.py#g' /start.sh && \
+    test "$(grep -c 'launch_comfy.sh' /start.sh)" = 2 && \
     test "$(grep -c 'COMFY_ARGS' /start.sh)" = 2 && \
     test "$(grep -c 'gv_handler.py' /start.sh)" = 2 && \
     python -c "import ast; ast.parse(open('/gv_handler.py').read()); ast.parse(open('/opt/gv/preload.py').read())"
