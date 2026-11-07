@@ -79,6 +79,15 @@ def new_release(endpoint_id, key, run):
 def run_job(ep, key, payload, max_wait):
     t_sub = time.time()
     r = call(ep + "/run", key, payload)
+    # Juste après un passage de 0 à N workers, RunPod répond quelques secondes « Endpoint is paused »
+    # (409 ENDPOINT_PAUSED, vu le 07/11) : on réessaie jusqu'à 2 min.
+    for _ in range(12):
+        if r.get("http_error") == 409 and "PAUSED" in str(r.get("body", "")):
+            time.sleep(10)
+            t_sub = time.time()
+            r = call(ep + "/run", key, payload)
+        else:
+            break
     jid = r.get("id")
     if not jid:
         return {"error": r}

@@ -47,7 +47,9 @@ def main():
         dc = (gv.get("env") or {}).get("RUNPOD_DC_ID") or r.get("dc") or "?"
         cold = gv.get("job_index") == 1 if gv else r.get("cold")
         exec_s = r.get("exec_s") or 0
-        pps = rate[r["workerId"]] / 3600 if r.get("workerId") in rate else price_per_s(gpu)
+        # La facture RunPod (07/11) suit la grille publique, pas le costPerHr des workers :
+        # le $/h des workers ne sert qu'à reconnaître la carte.
+        pps = price_per_s(gpu)
         if gv and cold:
             billed = (gv.get("total_s") or 0) + 20 + exec_s + 5
         else:
@@ -77,7 +79,7 @@ figcaption{padding:8px;font-size:12px;color:var(--mut)} figcaption b{color:var(-
 #z{position:fixed;inset:0;background:#000e;display:none;align-items:center;justify-content:center;z-index:9}
 #z img,#z video{max-width:96vw;max-height:96vh;width:auto;cursor:zoom-out}
 </style></head><body><h1>Banc global volume serverless</h1>
-<p>__N__ rendus. Coût = secondes facturées × $/h réel du worker sur le compte (5090 1,19 $/h, RTX PRO 6000 2,49 $/h ; grille publique sinon). Froid global volume = copie + 20 s + exécution + 5 s d'inactivité ; chaud et témoin = exécution + 5 s. Clic = plein écran, Échap pour fermer.</p>
+<p>__N__ rendus. Coût = secondes facturées × prix public RunPod, celui de la facture du 07/11 (5090 1,79 $/h, RTX PRO 6000 3,49 $/h). Froid global volume = copie + 20 s + exécution + 5 s d'inactivité ; chaud et témoin = exécution + 5 s. Clic = plein écran, Échap pour fermer.</p>
 <div class="grid">__CARDS__</div><div id="z"></div><script>
 const z=document.getElementById('z');
 document.querySelectorAll('.grid img,.grid video').forEach(e=>e.addEventListener('click',ev=>{
