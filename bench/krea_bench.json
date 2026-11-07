@@ -1,0 +1,100 @@
+{
+ "1": {
+  "inputs": {
+   "unet_name": "finepornV4TURBOFP8INT8_v4Bf16.safetensors",
+   "weight_dtype": "default"
+  },
+  "class_type": "UNETLoader"
+ },
+ "2": {
+  "inputs": {
+   "seed": 112233445566,
+   "steps": 12,
+   "cfg": 1,
+   "sampler_name": "er_sde",
+   "scheduler": "simple",
+   "denoise": 1,
+   "model": [
+    "1",
+    0
+   ],
+   "positive": [
+    "6",
+    0
+   ],
+   "negative": [
+    "8",
+    0
+   ],
+   "latent_image": [
+    "10",
+    0
+   ]
+  },
+  "class_type": "KSampler"
+ },
+ "3": {
+  "inputs": {
+   "samples": [
+    "2",
+    0
+   ],
+   "vae": [
+    "4",
+    0
+   ]
+  },
+  "class_type": "VAEDecode"
+ },
+ "4": {
+  "inputs": {
+   "vae_name": "wan_2.1_vae.safetensors"
+  },
+  "class_type": "VAELoader"
+ },
+ "6": {
+  "inputs": {
+   "text": "a red ceramic coffee mug on a wooden table next to a window, morning daylight, photograph",
+   "clip": [
+    "13",
+    0
+   ]
+  },
+  "class_type": "CLIPTextEncode"
+ },
+ "8": {
+  "inputs": {
+   "conditioning": [
+    "6",
+    0
+   ]
+  },
+  "class_type": "ConditioningZeroOut"
+ },
+ "10": {
+  "inputs": {
+   "width": 1224,
+   "height": 1632,
+   "batch_size": 1
+  },
+  "class_type": "EmptyLatentImage"
+ },
+ "13": {
+  "inputs": {
+   "clip_name": "qwen3VL4BAbliteratedComfyui_v10.safetensors",
+   "type": "krea2",
+   "device": "default"
+  },
+  "class_type": "CLIPLoader"
+ },
+ "15": {
+  "inputs": {
+   "filename_prefix": "gvbench",
+   "images": [
+    "3",
+    0
+   ]
+  },
+  "class_type": "SaveImage"
+ }
+}

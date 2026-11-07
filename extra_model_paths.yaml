@@ -1,0 +1,41 @@
+# Remplace celui de worker-comfyui (qui lit /runpod-volume/models en direct).
+# 1. local : copies faites au réveil par gv/preload.py (disque du conteneur, rapide).
+local:
+  base_path: /models
+  is_default: true
+  checkpoints: checkpoints
+  clip: |
+    clip
+    text_encoders
+  clip_vision: clip_vision
+  controlnet: controlnet
+  diffusion_models: |
+    diffusion_models
+    unet
+  embeddings: embeddings
+  loras: loras
+  text_encoders: text_encoders
+  upscale_models: upscale_models
+  vae: vae
+  audio_encoders: audio_encoders
+
+# 2. global volume (monté sur /runpod-volume), en secours : un modèle absent de PRELOAD_MODELS
+#    reste utilisable, mais il est lu en direct sur le stockage objet (plusieurs minutes, voire
+#    blocage sans --disable-mmap).
+global_volume:
+  base_path: /runpod-volume/models
+  checkpoints: checkpoints
+  clip: |
+    clip
+    text_encoders
+  clip_vision: clip_vision
+  controlnet: controlnet
+  diffusion_models: |
+    diffusion_models
+    unet
+  embeddings: embeddings
+  loras: loras
+  text_encoders: text_encoders
+  upscale_models: upscale_models
+  vae: vae
+  audio_encoders: audio_encoders

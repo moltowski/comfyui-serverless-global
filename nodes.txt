@@ -1,0 +1,16 @@
+# Custom nodes publics : <url git> <sha>. SHA = dernier commit au 2026-09-29 (versions du test).
+# rgthree           -> Power Lora Loader (Krea, Qwen)
+# Easy-Use          -> easy positive / easy promptConcat (Krea)
+# WAS               -> Image Load (H3 i2v/r2v)
+# fofr-toolkit      -> Width and height from aspect ratio (H3)
+# QwenImageRefPack  -> QwenImageReferencePack (Qwen 2.1 edit)
+# RES4LYF           -> sampler res_2s (recette Qwen Lenovo)
+# KJNodes, VHS      -> utilitaires image / vidéo courants
+https://github.com/rgthree/rgthree-comfy.git 449c58fcdd612f7733e54c51f6758ead63fa180b
+https://github.com/yolain/ComfyUI-Easy-Use.git 67afdc8204683e32549e63b7b02dc006d20441fa
+https://github.com/WASasquatch/was-node-suite-comfyui.git 8f77fb4a8272df4821e0a6357b36d7c97e0b28be
+https://github.com/fofr/comfyui-fofr-toolkit.git eb5fec4268995240db2ec7ea26e0fa40fc72bee0
+https://github.com/Hearmeman24/ComfyUI-QwenImageRefPack.git 441ba59439c3933d15f9217d1ed100fbdeecd2a4
+https://github.com/ClownsharkBatwing/RES4LYF.git 3d1d69da69ee47f7647d59e1bd0967e472fccc41
+https://github.com/kijai/ComfyUI-KJNodes.git d3cfe21625e5170126ce06fbfcfe1d88108688c3
+https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite.git 4d907bee61e92c2e65af3bd6383a4e4d356126d1
