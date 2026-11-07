@@ -52,9 +52,22 @@ def handler(job):
     gv["job_index"] = JOBS
     if inp.get("gv_info"):
         root = os.path.join(os.environ.get("GV_ROOT", "/runpod-volume"), "models")
-        return {"gv": gv, "inventory": _inventory(root), "local": _inventory("/models")}
+        bench = {}
+        bdir = os.path.join(os.environ.get("GV_ROOT", "/runpod-volume"), "bench")
+        if os.path.isdir(bdir):
+            for n in sorted(os.listdir(bdir))[-50:]:
+                try:
+                    with open(os.path.join(bdir, n), encoding="utf-8") as f:
+                        bench[n] = json.load(f)
+                except Exception as e:
+                    bench[n] = {"error": repr(e)}
+        return {"gv": gv, "inventory": _inventory(root), "local": _inventory("/models"), "bench": bench}
     t0 = time.time()
     out = base.handler(job)
+    # relu APRÈS le job : la copie se fait pendant le 1er job (launch_comfy.sh), le relevé
+    # n'existe pas encore au début de celui-ci
+    gv = _preload()
+    gv["job_index"] = JOBS
     gv["handler_s"] = round(time.time() - t0, 1)
     if isinstance(out, dict):
         out["gv"] = gv
