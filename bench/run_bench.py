@@ -3,7 +3,7 @@
 
     set RUNPOD_API_KEY=...     (clé du compte qui porte l'endpoint)
     python bench/run_bench.py --endpoint <id> --info                  # contenu du volume (gv_info)
-    python bench/run_bench.py --endpoint <id> --n 8 --cold            # 8 démarrages à froid
+    python bench/run_bench.py --endpoint <id> --n 6 --new-release     # 6 vrais froids (workers neufs)
     python bench/run_bench.py --endpoint <id> --n 3                   # 3 jobs à la suite (chauds)
     python bench/run_bench.py --endpoint 0ccxrcn554agid --n 3 --cold \
         --clip qwen3vl_4b_fp8_scaled.safetensors                       # témoin network volume
@@ -56,6 +56,24 @@ def wait_no_worker(ep, key, max_wait):
             return round(time.time() - t0)
         time.sleep(15)
     return None
+
+
+def new_release(endpoint_id, key, run):
+    """Force des workers neufs : changer une variable d'env crée une nouvelle release, RunPod
+    remplace alors les workers (y compris ceux gardés en réserve par FlashBoot). API REST v2."""
+    u = "https://api.runpod.io/v2/serverless/" + endpoint_id
+    cur = call(u, key)
+    env = dict(cur.get("env") or {})
+    env["GV_RELEASE"] = "%s-%d" % (time.strftime("%Y%m%d-%H%M%S"), run)
+    req = urllib.request.Request(u, data=json.dumps({"env": env}).encode(), method="PATCH",
+                                 headers={"Authorization": "Bearer " + key, "Content-Type": "application/json",
+                                          "User-Agent": "Mozilla/5.0"})
+    try:
+        with urllib.request.urlopen(req, timeout=60) as r:
+            res = json.load(r)
+        return (res.get("env") or {}).get("GV_RELEASE")
+    except urllib.error.HTTPError as e:
+        sys.exit("nouvelle release refusée : HTTP %s %s" % (e.code, e.read()[:300]))
 
 
 def run_job(ep, key, payload, max_wait):
@@ -113,6 +131,8 @@ def main():
     ap.add_argument("--workflow", default=os.path.join(HERE, "krea_bench.json"))
     ap.add_argument("--n", type=int, default=1)
     ap.add_argument("--cold", action="store_true")
+    ap.add_argument("--new-release", action="store_true",
+                    help="avant chaque job, nouvelle release (workers neufs = vrai froid, copie refaite)")
     ap.add_argument("--info", action="store_true", help="un job gv_info (inventaire du volume)")
     ap.add_argument("--clip", help="remplace le fichier du CLIPLoader (ex. témoin sur c-edge)")
     ap.add_argument("--tag", default="run")
@@ -142,12 +162,17 @@ def main():
                 n["inputs"]["seed"] = random.randint(1, 2 ** 48)
             if a.clip and n.get("class_type") == "CLIPLoader":
                 n["inputs"]["clip_name"] = a.clip
-        if a.cold:
+        if a.new_release:
+            rel = new_release(a.endpoint, key, i + 1)
+            print("nouvelle release %s" % rel)
+            time.sleep(20)
+        if a.cold or a.new_release:
             waited = wait_no_worker(ep, key, 1800)
-            print("attente sans worker : %ss" % waited)
+            print("attente sans worker actif : %ss" % waited)
         st = run_job(ep, key, {"input": {"workflow": wf}}, a.max_wait)
         rec = summarize(st, a.out, "%s%02d" % (a.tag, i + 1))
         rec["cold_requested"] = a.cold
+        rec["new_release"] = a.new_release
         with open(log, "a", encoding="utf-8") as f:
             f.write(json.dumps(rec) + "\n")
         gv = rec.get("gv") or {}
