@@ -172,8 +172,8 @@ def main():
         def one(k):
             w = json.loads(json.dumps(wf))
             for n in w.values():
-                if "seed" in n.get("inputs", {}):
-                    n["inputs"]["seed"] = random.randint(1, 2 ** 48)
+                for sk in [k for k in n.get("inputs", {}) if k.endswith("seed") and isinstance(n["inputs"][k], int)]:
+                    n["inputs"][sk] = random.randint(1, 2 ** 48)
             results[k] = run_job(ep, key, {"input": {"workflow": w}}, a.max_wait)
 
         th = [threading.Thread(target=one, args=(k,)) for k in range(a.parallel)]
@@ -196,8 +196,8 @@ def main():
 
     for i in range(a.n):
         for n in wf.values():
-            if "seed" in n.get("inputs", {}):
-                n["inputs"]["seed"] = random.randint(1, 2 ** 48)
+            for sk in [k for k in n.get("inputs", {}) if k.endswith("seed") and isinstance(n["inputs"][k], int)]:
+                n["inputs"][sk] = random.randint(1, 2 ** 48)
             if a.clip and n.get("class_type") == "CLIPLoader":
                 n["inputs"]["clip_name"] = a.clip
         if a.new_release:

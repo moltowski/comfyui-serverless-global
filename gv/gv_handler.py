@@ -20,6 +20,8 @@ JOBS = 0
 
 
 def _preload():
+    if not os.path.exists(PRELOAD_JSON):
+        return {"error": "copie en cours ou pas encore faite"}
     try:
         with open(PRELOAD_JSON, encoding="utf-8") as f:
             return json.load(f)
