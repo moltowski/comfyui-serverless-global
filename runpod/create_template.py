@@ -2,7 +2,7 @@
 """Crée (ou affiche) le template serverless RunPod du worker global volume.
 
     python runpod/create_template.py --image ghcr.io/<owner>/comfyui-serverless-global:<sha>
-    python runpod/create_template.py --image ... --key-file D:/safetychan/Voice/runpodkey.txt --apply
+    python runpod/create_template.py --image ... --key-file D:/safetychan/Voice/runpod-api-key-PERSO.txt --apply
 
 Sans --apply : affiche seulement le corps de la requête. La clé n'est jamais affichée.
 --key-file : fichier qui contient la clé (défaut : variable RUNPOD_API_KEY).
