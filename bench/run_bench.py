@@ -41,8 +41,11 @@ def call(url, key, payload=None, timeout=60):
 
 
 def workers_alive(h):
+    # "idle" / "ready" = workers provisionnés que RunPod garde en réserve (non facturés) : ils ne
+    # disparaissent pas, ne pas les attendre. Seuls comptent ceux qui tournent ou démarrent.
+    # Le vrai signal de froid est dans la sortie du job : gv.job_index == 1 et gv.total_s.
     w = h.get("workers", {})
-    return sum(w.get(k, 0) for k in ("idle", "initializing", "ready", "running"))
+    return sum(w.get(k, 0) for k in ("initializing", "running"))
 
 
 def wait_no_worker(ep, key, max_wait):
