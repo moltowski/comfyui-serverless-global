@@ -131,6 +131,8 @@ def main():
     ap.add_argument("--workflow", default=os.path.join(HERE, "krea_bench.json"))
     ap.add_argument("--n", type=int, default=1)
     ap.add_argument("--cold", action="store_true")
+    ap.add_argument("--parallel", type=int, default=0,
+                    help="N jobs d'un coup sur une release neuve (N workers neufs en même temps)")
     ap.add_argument("--new-release", action="store_true",
                     help="avant chaque job, nouvelle release (workers neufs = vrai froid, copie refaite)")
     ap.add_argument("--info", action="store_true", help="un job gv_info (inventaire du volume)")
@@ -156,6 +158,42 @@ def main():
         return
 
     wf = json.load(open(a.workflow, encoding="utf-8"))
+
+    if a.parallel:
+        # N jobs d'un coup sur une release neuve : RunPod monte jusqu'à N workers neufs en même
+        # temps (autant d'hôtes mesurés en un seul réveil). Seuls les jobs gv.job_index == 1 sont
+        # de vrais froids ; un job servi par un worker déjà réveillé est noté tel quel.
+        rel = new_release(a.endpoint, key, 0)
+        print("nouvelle release %s, attente 120 s que RunPod remplace les workers" % rel)
+        time.sleep(120)
+        import threading
+        results = [None] * a.parallel
+
+        def one(k):
+            w = json.loads(json.dumps(wf))
+            for n in w.values():
+                if "seed" in n.get("inputs", {}):
+                    n["inputs"]["seed"] = random.randint(1, 2 ** 48)
+            results[k] = run_job(ep, key, {"input": {"workflow": w}}, a.max_wait)
+
+        th = [threading.Thread(target=one, args=(k,)) for k in range(a.parallel)]
+        for t in th:
+            t.start()
+            time.sleep(1)
+        for t in th:
+            t.join()
+        for k, st in enumerate(results):
+            rec = summarize(st, a.out, "%s%02d" % (a.tag, k + 1))
+            rec["parallel"] = a.parallel
+            rec["release"] = rel
+            with open(log, "a", encoding="utf-8") as f:
+                f.write(json.dumps(rec) + "\n")
+            gv = rec.get("gv") or {}
+            print("%s %s attente %ss exécution %ss | copie %ss %s Mo/s | %s %s | job n°%s | sorties %s" % (
+                rec["tag"], rec["status"], rec["delay_s"], rec["exec_s"], gv.get("total_s"), gv.get("copy_mbps"),
+                (gv.get("env") or {}).get("RUNPOD_DC_ID"), gv.get("gpu"), gv.get("job_index"), rec.get("n_outputs")))
+        return
+
     for i in range(a.n):
         for n in wf.values():
             if "seed" in n.get("inputs", {}):
